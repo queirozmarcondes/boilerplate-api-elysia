@@ -1,99 +1,20 @@
-// src/routes/user.routes.ts
 import { Elysia, t } from 'elysia'
 import { userService } from '../services/user.service'
+import { jwtGuard } from '../../../middleware/auth/jwt.guard'
+import { jwtPlugin } from '../../../plugins/jwt.pluggin'
 
 export const user = new Elysia({ prefix: '/user' })
+
   .use(userService)
+  .use(jwtPlugin())
+  .use(jwtGuard())
 
-.post(
-  '/sign-up',
-  async ({ body: { username, email, password }, store, set }) => {
-    if (store.user[username]) {
-      set.status = 400
-      return {
-        success: false,
-        message: 'User already exists',
-      }
-    }
-
-    store.user[username] = {
-      email,
-      password: await Bun.password.hash(password),
-    }
-
-    set.status = 201
-    return {
-      success: true,
-      message: 'User created',
-    }
-  },
-  {
-    body: 'signUp',
-    detail: {
-      title: 'User Registration',
-      tags: ['User'],
-      summary: 'User registration',
-      description: 'Creates a new user with username, email and password.',
-    },
-    response: t.Object({
-      success: t.Boolean(),
-      message: t.String(),
-    }),
-  }
-)
-
-
-.post(
-  '/sign-in',
-  async ({ store: { user, session }, body, cookie }) => {
-    const { email, password } = body
-
-    const entry = Object.entries(user).find(([_, data]) => data.email === email)
-    if (!entry) {
-      return {
-        success: false,
-        message: 'Invalid email or password',
-      }
-    }
-
-    const [username, data] = entry
-
-    if (!(await Bun.password.verify(password, data.password))) {
-      return {
-        success: false,
-        message: 'Invalid email or password',
-      }
-    }
-
-    const key = crypto.getRandomValues(new Uint32Array(1))[0]
-    session[key] = username
-    cookie.token.value = key
-
-    return {
-      success: true,
-      message: `Signed in as ${username}`,
-    }
-  },
-  {
-    body: 'signIn',
-    cookie: 'optionalSession',
-    detail: {
-      title: 'User Login',
-      tags: ['User'],
-      summary: 'User login',
-      description: 'Validates user credentials and sets session token.',
-    },
-    response: t.Object({
-      success: t.Boolean(),
-      message: t.String(),
-    }),
-  }
-)
-
+// PATCH /update
 .patch(
   '/update',
-  async ({ body, cookie: { token }, store: { session, user }, set }) => {
-    const username = session[token.value]
+  async ({ body, cookie: { token }, store: { user }, jwt, set }) => {
+    const payload = await jwt.verify(token.value)
+    const username = payload && typeof payload === 'object' && 'username' in payload ? (payload as any).username : undefined
 
     if (!username || !user[username]) {
       set.status = 401
@@ -132,11 +53,13 @@ export const user = new Elysia({ prefix: '/user' })
   }
 )
 
+// GET /profile
 .get(
   '/profile',
-  ({ cookie: { token }, store: { session, user }, set }) => {
-    const username = session[token.value]
-    const account = user[username]
+  async ({ cookie: { token }, store: { user }, jwt, set }) => {
+    const payload = await jwt.verify(token.value)
+    const username = payload && typeof payload === 'object' && 'username' in payload ? (payload as any).username : undefined
+    const account = username ? user[username] : undefined
 
     if (!username || !account) {
       set.status = 401
@@ -168,41 +91,3 @@ export const user = new Elysia({ prefix: '/user' })
     }),
   }
 )
-
-.get(
-  '/profile',
-  ({ cookie: { token }, store: { session, user }, set }) => {
-    const username = session[token.value]
-    const account = user[username]
-
-    if (!username || !account) {
-      set.status = 401
-      return {
-        success: false,
-        username: '',
-        email: '',
-      }
-    }
-
-    return {
-      success: true,
-      username,
-      email: account.email,
-    }
-  },
-  {
-    cookie: 'session',
-    detail: {
-      title: 'User Profile',
-      tags: ['User'],
-      summary: 'User profile',
-      description: 'Returns the authenticated user based on session token.',
-    },
-    response: t.Object({
-      success: t.Boolean(),
-      username: t.String(),
-      email: t.String(),
-    }),
-  }
-)
-

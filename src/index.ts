@@ -2,8 +2,11 @@ import { Elysia, t } from 'elysia'
 
 import { user } from './modules/user/routes/user.routes'
 import { swaggerPlugin } from './plugins/swagger.pluggin';
+import { jwtPlugin } from './plugins/jwt.pluggin';
+import { auth } from './modules/auth/routes/auth.routes';
 
  new Elysia()
+  .use(jwtPlugin())
   .use(swaggerPlugin())
    .get(
     '/status',
@@ -23,6 +26,7 @@ import { swaggerPlugin } from './plugins/swagger.pluggin';
       }),
     }
   )
+  .use(auth)
   .use(user)
   .listen(3000)
 
