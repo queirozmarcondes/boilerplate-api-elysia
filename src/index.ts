@@ -1,12 +1,10 @@
 import { Elysia, t } from 'elysia'
 
-import { note } from './routes/note.routes'
-import { user } from './routes/user.routes'
+import { user } from './modules/user/routes/user.routes'
 import { swaggerPlugin } from './plugins/swagger.pluggin';
 
  new Elysia()
   .use(swaggerPlugin())
-  .use(note)
   .use(user)
   .listen(3000)
 

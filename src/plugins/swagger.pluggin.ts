@@ -12,7 +12,6 @@ export const swaggerPlugin = (config?: Partial<ElysiaSwaggerConfig['documentatio
         description: 'Documentação auto-gerada com Elysia + Swagger'
       },
       tags: [
-        { name: 'Note', description: 'Operações para notas' },
         { name: 'User', description: 'Autenticação de Usuários' }
       ],
       components: {

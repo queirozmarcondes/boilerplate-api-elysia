@@ -1,6 +1,6 @@
 // src/routes/user.routes.ts
 import { Elysia, t } from 'elysia'
-import { userService } from '../services/user.services'
+import { userService } from '../../../services/user.service'
 
 export const user = new Elysia({ prefix: '/user' })
   .use(userService)
